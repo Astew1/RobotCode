@@ -53,6 +53,7 @@ public class Robot extends IterativeRobot {
 
 	@Override
 	public void robotInit() {
+		//Drive Train Controllers
 		right1 = new CANTalon(2);
 		right1.set(0);
 		right2 = new CANTalon(7);
@@ -62,6 +63,7 @@ public class Robot extends IterativeRobot {
 		left2 = new CANTalon(6);
 		left2.set(0);
 		
+		//Status Booleans
 		intaking = false;
 		outtaking = false;
 		helloKittyLeft = false;
@@ -96,7 +98,7 @@ public class Robot extends IterativeRobot {
 		rightEncoder.setDistancePerPulse((Math.PI * ROBOT_WHEEL_DIAMETER_INCHES / 2)/360);
 		//leftEncoder.setDistancePerPulse((Math.PI * ROBOT_WHEEL_DIAMETER_INCHES / 2)/360);
 		
-		
+		//Initialize Webcam
 	    UsbCamera camera = CameraServer.getInstance().startAutomaticCapture();
 	    camera.setResolution(320, 240);
 	    visionThread = new VisionThread(camera, new GripPipeline(), pipeline -> {
@@ -144,9 +146,6 @@ public class Robot extends IterativeRobot {
 
 				Rect rA = inputRects.get(i);
 				Rect rB = inputRects.get(j);
-				
-//				System.out.println(i + ": " + rA.y);
-//				System.out.println(j + ": " + rB.y);
 
 				if (rA.area() < 300 || rB.area() < 300) {
 				}
@@ -190,15 +189,15 @@ public class Robot extends IterativeRobot {
 	
 	public void teleopPeriodic() {
         while(isEnabled()&&isOperatorControl()) {
+        	//Shooter Flywheel
         	if(subSystemController.getLinearAxis(XboxController.RIGHT_TRIGGER_AXIS)>.1){
         		shooterFlywheel.set(0.65*subSystemController.getLinearAxis(XboxController.RIGHT_TRIGGER_AXIS));
         	}
         	else{
         		shooterFlywheel.set(0.8*subSystemController.getLinearAxis(XboxController.LEFT_TRIGGER_AXIS));
         	}
-//    		intakeMotor.set(0.5*driveController.getLinearAxis(XboxController.LEFT_TRIGGER_AXIS));
-    		
-//        	shooterElevator.set(subSystemController.getLinearAxis(XboxController.RIGHT_Y_AXIS));
+
+        	//Shooter Elevator
         	if(subSystemController.getRawButton(XboxController.A_BUTTON)){
         		shooterElevator.set(0.4);
         	}
@@ -209,15 +208,7 @@ public class Robot extends IterativeRobot {
         		shooterElevator.set(0);
         	}
         	
-//        	if (subSystemController.isButtonPressed(XboxController.START_BUTTON)) {
-//        		if (intaking) {
-//        			intaking = false;
-//        		}
-//        		else {
-//        			intaking = true;
-//        			outtaking = false;
-//        		}
-//        	}
+        	//Intake
         	if (driveController.isButtonPressed(XboxController.START_BUTTON)) {
         		if(intaking){
         			intaking = false;
@@ -236,15 +227,17 @@ public class Robot extends IterativeRobot {
         		}
         		intaking = false;
         	}
+        	//Vision & peg seeking
         	if (driveController.isButtonPressed(XboxController.X_BUTTON)) {
         		if(seekingPeg){
-//        			visionThread.stop();
-//        			visionThread.
+        			visionThread.stop();
+        			seekingPeg = false;
         		}
         	}
-        		else{
-        			
-        		}
+        	else{
+        		visionThread.start()
+        		seekingPeg = true;
+        	}
 //        		System.out.println("SeekingPeg: " + seekingPeg);
         	
 	
@@ -255,26 +248,28 @@ public class Robot extends IterativeRobot {
         		//System.out.println(turnDir + "CenterX: " + centerX + "; IMG Center: " + this.IMG_WIDTH/2.0 + ".");
         		
         		if(centerX - this.IMG_WIDTH/2.0 > 15){
-        			System.out.println("DIFFERENCE: "+ (centerX - this.IMG_WIDTH/2.0));
+        			//System.out.println("DIFFERENCE: "+ (centerX - this.IMG_WIDTH/2.0));
         			driveTrain.arcadeDrive(0, 0.5);
         		}
         		else if (centerX - this.IMG_WIDTH/2.0 < -15){
-        			System.out.println("DIFFERENCE: "+ (centerX - this.IMG_WIDTH/2.0));
+        			//System.out.println("DIFFERENCE: "+ (centerX - this.IMG_WIDTH/2.0));
         			driveTrain.arcadeDrive(0, -0.5);
         		}
         		else{
-        			System.out.println("DIFFENERCE: ZERO");
+        			//System.out.println("DIFFENERCE: ZERO");
         			driveTrain.arcadeDrive(0, 0);
         		}
         		
-        	} else {
+        	} 
+        	else {
             	driveTrain.arcadeDrive(driveController.getLinearAxis(XboxController.RIGHT_Y_AXIS)*0.8,-driveController.getLinearAxis(XboxController.LEFT_X_AXIS)*0.8);
         	}
         	
         	
-        	if (driveController.isButtonPressed(XboxController.A_BUTTON)){
-        		moveXFeet(2);
-        	}
+//        	if (driveController.isButtonPressed(XboxController.A_BUTTON)){
+//        		moveXFeet(2);
+//        	}
+        	
         	if (intaking) {
         		intakeMotor.set(-1);
         	}
@@ -297,12 +292,6 @@ public class Robot extends IterativeRobot {
         		helloKittyLeft = !helloKittyLeft;
         		
         	}
-        	if(driveController.isButtonPressed(XboxController.RB_BUTTON)){
-        		encoderDebug = !encoderDebug;
-        	}
-        	if(encoderDebug){
-        		System.out.println(rightEncoder.getDistance());
-        	}
         	
         	if(helloKittyLeft){
         		helloKittyMotor.setAngle(60.0);
@@ -310,6 +299,13 @@ public class Robot extends IterativeRobot {
         	else{
         		helloKittyMotor.setAngle(120.0);
         		
+        	}
+        	
+        	if(driveController.isButtonPressed(XboxController.RB_BUTTON)){
+        		encoderDebug = !encoderDebug;
+        	}
+        	if(encoderDebug){
+        		System.out.println("Encoder Debug: " + rightEncoder.getDistance());
         	}
         	
         	Timer.delay(0.05);
